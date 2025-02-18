@@ -1,0 +1,57 @@
+name: Deploy to ECR and EKS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+
+    # Checkout Code
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Login to AWS ECR
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      run: |
+        aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.REPO_URL }}
+
+    # Build and Push Docker Image
+    - name: Build and push Docker image
+      run: |
+        IMAGE_TAG=$(git rev-parse --short HEAD)
+        docker build -t ${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG -f ./ContainerizedApp/docker/Dockerfile .
+        docker tag ${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG ${{ secrets.REPO_URL }}/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
+        docker push ${{ secrets.REPO_URL }}/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
+
+    # Update kubeconfig to connect to EKS
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_CLUSTER_NAME }}
+
+    # Verify Kubernetes Connection
+    - name: Verify Kubernetes Connection
+      run: |
+        kubectl cluster-info
+        kubectl get nodes
+
+    # Deploy with Helm
+    - name: Deploy with Helm
+      run: |
+        IMAGE_TAG=$(git rev-parse --short HEAD)
+        helm upgrade --install dev-app ./HelmChart/dev-app \
+          --set image.repository=${{ secrets.REPO_URL }}/${{ secrets.ECR_REPOSITORY }} \
+          --set image.tag=$IMAGE_TAG \
+          --force \
+          --namespace default
