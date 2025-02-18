@@ -1,10 +1,11 @@
 # DevOps Tools Showoff
-Goal of this project is to showoff skills in mainstream Cloud DevOps tools such as:
-AWS as Cloud provider
-Terraform for IaC
-Helm Charts for K8s infrastructure management
-Github Actions for CI/CD pipeline
-Prometheus + Grafana for monitoring
+
+Goal of this project is to showoff skills in mainstream Cloud DevOps tools such as:  
++ AWS as Cloud provider  
++ Terraform for IaC  
++ Helm Charts for K8s infrastructure management  
++ Github Actions for CI/CD pipeline  
++ Prometheus + Grafana for monitoring  
 
 
 # Installing Prometheus/Grafana on EKS with Helm
