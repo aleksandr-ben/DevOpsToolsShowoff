@@ -1,3 +1,3 @@
 <?php
-echo "Ver. 1.1.0"
+echo "Ver. 1.2.0"
 ?>
